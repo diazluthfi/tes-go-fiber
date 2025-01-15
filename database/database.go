@@ -1,22 +1,26 @@
-package database
+package databases
 
 import (
 	"fmt"
+	"log"
 
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/mysql"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 )
 
-var db *gorm.DB
+var DB *gorm.DB
 
 func DatabaseInit() {
-	db, err := gorm.Open("mysql", "root:123@/tes_db?charset=utf8&parseTime=True&loc=Local")
+	var err error
+
+	// Data Source Name (DSN)
+	const MYSQL = "root:123@tcp(127.0.0.1:3306)/tes_db?charset=utf8mb4&parseTime=True&loc=Local"
+
+	// Membuka koneksi ke database
+	DB, err = gorm.Open(mysql.Open(MYSQL), &gorm.Config{})
 	if err != nil {
-		fmt.Println("Failed to connect to database:", err)
-		return
+		log.Fatalf("Failed to connect to database: %v", err)
 	}
-	defer db.Close() // Pastikan koneksi ditutup setelah selesai digunakan
 
 	fmt.Println("Database connection successful!")
-
 }

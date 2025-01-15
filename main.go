@@ -1,7 +1,8 @@
 package main
 
 import (
-	"tes/database"
+	databases "tes/database"
+	"tes/database/migration"
 	"tes/route"
 
 	"github.com/gofiber/fiber/v2"
@@ -9,7 +10,8 @@ import (
 
 func main() {
 	//INITIAL DATABASE
-	database.DatabaseInit()
+	databases.DatabaseInit()
+	migration.RunMigration()
 	app := fiber.New()
 
 	//manggil nama package
