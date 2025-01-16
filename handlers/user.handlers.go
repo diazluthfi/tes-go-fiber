@@ -40,10 +40,11 @@ func UserHandlerCreate(ctx *fiber.Ctx) error {
 	}
 
 	newUser := entity.User{
-		Name:    user.Name,
-		Email:   user.Email,
-		Address: user.Address,
-		Phone:   user.Phone,
+		Name:     user.Name,
+		Email:    user.Email,
+		Address:  user.Address,
+		Phone:    user.Phone,
+		Password: user.Password,
 	}
 
 	errCreateUser := databases.DB.Create(&newUser).Error
@@ -77,6 +78,7 @@ func GetHandlerById(ctx *fiber.Ctx) error {
 		Id:        user.Id,
 		Name:      user.Name,
 		Email:     user.Email,
+		Password:  user.Password,
 		Address:   user.Address,
 		Phone:     user.Phone,
 		CreatedAt: user.CreatedAt,
