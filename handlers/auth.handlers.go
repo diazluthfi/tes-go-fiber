@@ -1,11 +1,14 @@
 package handlers
 
 import (
+	"log"
 	databases "tes/database"
 	"tes/model/entity"
 	"tes/model/request"
 	"tes/utils"
+	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 )
@@ -43,7 +46,23 @@ func AuthHandlersLogin(ctx *fiber.Ctx) error {
 			"message": "Wrong Coredential",
 		})
 	}
+
+	claims := jwt.MapClaims{}
+	claims["name"] = user.Name
+	claims["name"] = user.Email
+	claims["name"] = user.Address
+	claims["exp"] = time.Now().Add(time.Minute * 2).Unix()
+
+	token, errGenerateToken := utils.GenerateToken(&claims)
+	if errGenerateToken != nil {
+		log.Println(errGenerateToken)
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"message": "Wrong Coredential",
+		})
+	}
+
 	return ctx.JSON(fiber.Map{
-		"token": "secret",
+		"token": token,
 	})
+
 }
