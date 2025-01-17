@@ -13,7 +13,10 @@ import (
 )
 
 func UserhandlersRead(ctx *fiber.Ctx) error {
-
+	// //TOKEN
+	// userInfo := ctx.Locals("userInfo")
+	// log.Println("user info data ::", userInfo)
+	// //
 	var user []entity.User
 	result := databases.DB.Debug().Find(&user)
 
