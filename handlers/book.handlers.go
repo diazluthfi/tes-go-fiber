@@ -42,6 +42,8 @@ func BookHandlerCreate(ctx *fiber.Ctx) error {
 		if errSaveFile != nil {
 			log.Println("save file failed")
 		}
+	} else {
+		log.Println("nothing file to uploading")
 	}
 
 	newBook := entity.Book{
