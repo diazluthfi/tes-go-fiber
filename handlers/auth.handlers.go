@@ -64,7 +64,7 @@ func AuthHandlersLogin(ctx *fiber.Ctx) error {
 	claims["exp"] = time.Now().Add(time.Minute * 2).Unix() // Menyimpan waktu kedaluwarsa token (2 menit dari sekarang)
 
 	// Menentukan role berdasarkan email
-	if user.Email == "te2113a@gmail.com" {
+	if user.Email == "diaz@gmail.com" {
 		claims["role"] = "admin" // Jika email adalah milik admin, role diatur sebagai admin
 	} else {
 		claims["role"] = "user" // Selain itu, role diatur sebagai user
@@ -80,8 +80,97 @@ func AuthHandlersLogin(ctx *fiber.Ctx) error {
 		})
 	}
 
-	// Mengembalikan token JWT sebagai respon
+	// Generate Refresh Token
+	refreshClaims := jwt.MapClaims{
+		"email": user.Email,
+		"exp":   time.Now().Add(time.Hour * 24 * 7).Unix(), // Refresh token valid for 7 days
+	}
+
+	refreshToken, err := utils.GenerateToken(&refreshClaims)
+	if err != nil {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"message": "Error generating refresh token",
+		})
+	}
+
+	// Return the tokens
 	return ctx.JSON(fiber.Map{
-		"token": token,
+		"access_token":  token,
+		"refresh_token": refreshToken,
+	})
+}
+func RefreshToken(ctx *fiber.Ctx) error {
+	// Mengambil refresh token dari header
+	refreshToken := ctx.Get("x-refresh-token")
+	if refreshToken == "" {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"message": "Refresh token is required",
+		})
+	}
+
+	// Memverifikasi dan mendekode refresh token
+	claims, err := utils.DecodeToken(refreshToken)
+	if err != nil {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"message": "Invalid or expired refresh token",
+		})
+	}
+
+	// Pastikan klaim `exp` ada pada refresh token
+	exp, ok := claims["exp"].(float64)
+	if !ok {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"message": "Missing expiration in refresh token",
+		})
+	}
+
+	// Verifikasi apakah refresh token sudah kedaluwarsa
+	if time.Now().Unix() > int64(exp) {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"message": "Refresh token expired",
+		})
+	}
+
+	// Mengambil email dari klaim refresh token untuk mencari user di database
+	email, ok := claims["email"].(string)
+	if !ok {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"message": "Invalid email in refresh token",
+		})
+	}
+
+	// Mencari user berdasarkan email
+	var user entity.User
+	err = databases.DB.First(&user, "email = ?", email).Error
+	if err != nil {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"message": "User not found",
+		})
+	}
+
+	// Membuat klaim untuk access token baru
+	newClaims := jwt.MapClaims{
+		"email":   user.Email,
+		"name":    user.Name,
+		"address": user.Address,                           // Pastikan role sudah ada di dalam model User
+		"exp":     time.Now().Add(time.Minute * 2).Unix(), // Valid for 15 minutes
+	}
+
+	if user.Email == "diaz@gmail.com" {
+		newClaims["role"] = "admin" // Jika email adalah milik admin, role diatur sebagai admin
+	} else {
+		newClaims["role"] = "user" // Selain itu, role diatur sebagai user
+	}
+	// Membuat access token baru
+	token, err := utils.GenerateToken(&newClaims)
+	if err != nil {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"message": "Error generating new access token",
+		})
+	}
+
+	// Kembalikan access token baru
+	return ctx.JSON(fiber.Map{
+		"access_token": token,
 	})
 }
